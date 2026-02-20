@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use anyhow::Result;
@@ -132,7 +132,7 @@ fn run() -> Result<()> {
 // ── Commands ────────────────────────────────────────────────────────────────
 
 fn cmd_scan(
-    path: &PathBuf,
+    path: &Path,
     max_depth: Option<usize>,
     older_than: Option<&str>,
     json: bool,
@@ -151,7 +151,7 @@ fn cmd_scan(
 }
 
 fn cmd_clean(
-    path: &PathBuf,
+    path: &Path,
     max_depth: Option<usize>,
     older_than: Option<&str>,
     all: bool,
@@ -257,7 +257,7 @@ fn cmd_clean(
 }
 
 fn cmd_summary(
-    path: &PathBuf,
+    path: &Path,
     max_depth: Option<usize>,
     older_than: Option<&str>,
     json: bool,
@@ -292,7 +292,7 @@ fn cmd_summary(
         });
         println!("{}", serde_json::to_string_pretty(&summary)?);
     } else {
-        println!("\n  {} devclean summary for {}\n", "📊", path.display());
+        println!("\n  📊 devclean summary for {}\n", path.display());
         println!(
             "  Total projects:     {}",
             cyan(&total_projects.to_string())
@@ -344,7 +344,7 @@ fn cmd_config(show: bool, reset: bool) -> Result<()> {
     }
 
     let config_path = DevCleanConfig::config_path();
-    println!("\n  {} devclean configuration\n", "⚙");
+    println!("\n  ⚙ devclean configuration\n");
     println!("  Config file: {}", config_path.display());
     println!(
         "  Exists:      {}",
@@ -369,7 +369,7 @@ fn cmd_config(show: bool, reset: bool) -> Result<()> {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-fn sort_by_size(projects: &mut Vec<ScannedProject>) {
+fn sort_by_size(projects: &mut [ScannedProject]) {
     projects.sort_by(|a, b| b.total_cleanable_bytes.cmp(&a.total_cleanable_bytes));
 }
 
