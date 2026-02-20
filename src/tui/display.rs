@@ -205,9 +205,9 @@ pub fn print_results_table(projects: &[ScannedProject]) {
     write!(out, "  │").unwrap();
     for (i, header) in headers.iter().enumerate() {
         let padded = if i == 0 || i == 3 {
-            pad_left(&bold(header), widths[i] + 8) // bold adds 8 chars of ANSI
+            pad_left(&bold(header), widths[i])
         } else {
-            pad_right(&bold(header), widths[i] + 8)
+            pad_right(&bold(header), widths[i])
         };
         write!(out, " {padded} │").unwrap();
     }
@@ -226,13 +226,13 @@ pub fn print_results_table(projects: &[ScannedProject]) {
     // Data rows
     for row in &rows {
         let fields = [
-            pad_left(&dim(&row.index), widths[0] + 8),
+            pad_left(&dim(&row.index), widths[0]),
             pad_right(&row.name, widths[1]),
-            pad_right(&cyan(&row.kind), widths[2] + 9), // cyan adds 9 chars
-            pad_left(&yellow(&row.size), widths[3] + 9),
+            pad_right(&cyan(&row.kind), widths[2]),
+            pad_left(&yellow(&row.size), widths[3]),
             pad_right(&truncate(&row.targets, widths[4]), widths[4]),
-            pad_right(&dim(&row.last_modified), widths[5] + 8),
-            pad_right(&dim(&truncate(&row.path, widths[6])), widths[6] + 8),
+            pad_right(&dim(&row.last_modified), widths[5]),
+            pad_right(&dim(&truncate(&row.path, widths[6])), widths[6]),
         ];
 
         write!(out, "  │").unwrap();
