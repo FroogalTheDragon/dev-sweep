@@ -97,7 +97,7 @@ fn find_project_roots(
 
     let mut dirs_scanned: u64 = 0;
 
-    for entry in walker.into_iter().filter_entry(|e| should_visit(e)) {
+    for entry in walker.into_iter().filter_entry(should_visit) {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
@@ -108,7 +108,7 @@ fn find_project_roots(
         }
 
         dirs_scanned += 1;
-        if dirs_scanned % 200 == 0 {
+        if dirs_scanned.is_multiple_of(200) {
             spinner.tick(&format!("Scanning... {} directories checked", dirs_scanned));
         }
 
@@ -246,14 +246,14 @@ fn get_last_modified(project_root: &Path, kind: &ProjectKind) -> Result<DateTime
             continue;
         }
         let marker_path = project_root.join(marker);
-        if let Ok(meta) = fs::metadata(&marker_path) {
-            if let Ok(modified) = meta.modified() {
-                latest = Some(match latest {
-                    Some(prev) if modified > prev => modified,
-                    Some(prev) => prev,
-                    None => modified,
-                });
-            }
+        if let Ok(meta) = fs::metadata(&marker_path)
+            && let Ok(modified) = meta.modified()
+        {
+            latest = Some(match latest {
+                Some(prev) if modified > prev => modified,
+                Some(prev) => prev,
+                None => modified,
+            });
         }
     }
 
@@ -270,10 +270,10 @@ pub fn dir_size(path: &Path) -> Result<u64> {
     let mut total: u64 = 0;
 
     for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() {
-            if let Ok(meta) = entry.metadata() {
-                total += meta.len();
-            }
+        if entry.file_type().is_file()
+            && let Ok(meta) = entry.metadata()
+        {
+            total += meta.len();
         }
     }
 
@@ -293,17 +293,15 @@ pub fn find_pycache_recursive(root: &Path, targets: &mut Vec<CleanTarget>) {
         if entry.file_type().is_dir()
             && entry.file_name() == "__pycache__"
             && entry.depth() > 0
+            && let Ok(size) = dir_size(entry.path())
+            && size > 0
         {
-            if let Ok(size) = dir_size(entry.path()) {
-                if size > 0 {
-                    let relative = entry.path().strip_prefix(root).unwrap_or(entry.path());
-                    targets.push(CleanTarget {
-                        path: entry.path().to_path_buf(),
-                        name: relative.display().to_string(),
-                        size_bytes: size,
-                    });
-                }
-            }
+            let relative = entry.path().strip_prefix(root).unwrap_or(entry.path());
+            targets.push(CleanTarget {
+                path: entry.path().to_path_buf(),
+                name: relative.display().to_string(),
+                size_bytes: size,
+            });
         }
     }
 }
