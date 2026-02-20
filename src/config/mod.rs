@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::scanner::ProjectKind;
 
 /// Persistent configuration for devclean.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DevCleanConfig {
     /// Directories to always ignore during scanning.
     #[serde(default)]
@@ -22,17 +22,6 @@ pub struct DevCleanConfig {
     /// Maximum directory depth to scan.
     #[serde(default)]
     pub max_depth: Option<usize>,
-}
-
-impl Default for DevCleanConfig {
-    fn default() -> Self {
-        Self {
-            ignore_paths: Vec::new(),
-            exclude_kinds: Vec::new(),
-            default_roots: Vec::new(),
-            max_depth: None,
-        }
-    }
 }
 
 impl DevCleanConfig {
