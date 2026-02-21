@@ -8,6 +8,12 @@
   A fast, interactive CLI tool to find and clean build artifacts and dependency caches across all your developer projects.
 </p>
 
+<p align="center">
+  <a href="https://crates.io/crates/dev-sweep"><img src="https://img.shields.io/crates/v/dev-sweep.svg" alt="crates.io"></a>
+  <a href="https://docs.rs/dev-sweep"><img src="https://docs.rs/dev-sweep/badge.svg" alt="docs.rs"></a>
+  <a href="https://github.com/markwaidjr/dev-sweep/blob/master/LICENSE"><img src="https://img.shields.io/crates/l/dev-sweep.svg" alt="license"></a>
+</p>
+
 Every developer accumulates gigabytes of `node_modules/`, `target/`, `.venv/`, and `build/` directories across dozens of old projects they haven't touched in months. **dev-sweep** scans your filesystem, finds those space hogs, and lets you reclaim disk space in seconds.
 
 ## Features
@@ -25,21 +31,27 @@ Every developer accumulates gigabytes of `node_modules/`, `target/`, `.venv/`, a
 
 ## Installation
 
-### From crates.io
+### From [crates.io](https://crates.io/crates/dev-sweep) (recommended)
+
+dev-sweep is published on crates.io. If you have [Rust](https://www.rust-lang.org/tools/install) installed, just run:
 
 ```bash
 cargo install dev-sweep
 ```
 
+This downloads, compiles, and installs the `dev-sweep` binary to `~/.cargo/bin/` — no need to clone the repo.
+
 ### From source
 
-Requires [Rust](https://www.rust-lang.org/tools/install) 1.85+ (edition 2024).
+If you'd prefer to build from the latest code:
 
 ```bash
 git clone https://github.com/markwaidjr/dev-sweep.git
 cd dev-sweep
 cargo install --path .
 ```
+
+Requires Rust 1.85+ (edition 2024).
 
 ### Build locally (without installing)
 
