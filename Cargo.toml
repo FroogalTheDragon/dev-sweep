@@ -7,8 +7,8 @@ authors = ["Mark Waid Jr"]
 description = "A fast, interactive CLI tool to find and clean build artifacts and dependency caches across all your dev projects"
 readme = "README.md"
 license = "MIT"
-repository = "https://github.com/markwaidjr/dev-sweep"
-homepage = "https://github.com/markwaidjr/dev-sweep"
+repository = "https://github.com/FroogalTheDragon/dev-sweep"
+homepage = "https://github.com/FroogalTheDragon/dev-sweep"
 keywords = ["cli", "cleanup", "disk-space", "developer-tools", "build-artifacts"]
 categories = ["command-line-utilities", "development-tools", "filesystem"]
 
