@@ -1,6 +1,8 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use std::sync::LazyLock;
 use std::time::SystemTime;
 
 use anyhow::Result;
@@ -10,25 +12,30 @@ use walkdir::WalkDir;
 
 use super::project::{CleanTarget, ProjectKind, ScannedProject};
 
-/// Directories to skip during scanning (to avoid infinite loops or irrelevant results).
-pub const SKIP_DIRS: &[&str] = &[
-    ".git",
-    ".hg",
-    ".svn",
-    "node_modules",
-    "target",
-    ".venv",
-    "venv",
-    "__pycache__",
-    ".gradle",
-    "Library", // Unity
-    ".terraform",
-    ".godot",
-    ".stack-work",
-    ".build",
-    "zig-cache",
-    "zig-out",
-];
+/// Directory names to skip during scanning (build artifacts, VCS, caches, etc.).
+///
+/// Stored as a `HashSet` for O(1) lookups — `should_visit()` is called on every
+/// directory entry during the walk, so this is a hot path on large filesystems.
+static SKIP_DIRS: LazyLock<HashSet<&'static str>> = LazyLock::new(|| {
+    HashSet::from([
+        ".git",
+        ".hg",
+        ".svn",
+        "node_modules",
+        "target",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".gradle",
+        "Library", // Unity
+        ".terraform",
+        ".godot",
+        ".stack-work",
+        ".build",
+        "zig-cache",
+        "zig-out",
+    ])
+});
 
 /// A simple spinner for terminal feedback.
 struct Spinner {
@@ -141,7 +148,7 @@ pub fn should_visit(entry: &walkdir::DirEntry) -> bool {
         return false;
     }
 
-    !SKIP_DIRS.contains(&name.as_ref())
+    !SKIP_DIRS.contains(name.as_ref())
 }
 
 /// Detect what kind of project a directory contains, if any.
@@ -214,13 +221,10 @@ fn resolve_pattern(project_root: &Path, pattern: &str) -> Vec<(PathBuf, String)>
             .into_iter()
             .flatten()
             .filter_map(|e| e.ok())
-            .filter(|e| {
-                let name = e.file_name().to_string_lossy().to_string();
-                name.ends_with(suffix) && e.path().is_dir()
-            })
-            .map(|e| {
-                let name = e.file_name().to_string_lossy().to_string();
-                (e.path(), name)
+            .filter_map(|e| {
+                let name = e.file_name().to_string_lossy().into_owned();
+                (name.ends_with(suffix) && e.path().is_dir())
+                    .then(|| (e.path(), name))
             })
             .collect()
     } else {
@@ -293,7 +297,7 @@ pub fn find_pycache_recursive(root: &Path, targets: &mut Vec<CleanTarget>) {
         .into_iter()
         .filter_entry(|e| {
             let name = e.file_name().to_string_lossy();
-            !SKIP_DIRS.contains(&name.as_ref()) || name == "__pycache__"
+            !SKIP_DIRS.contains(name.as_ref()) || name == "__pycache__"
         })
         .filter_map(|e| e.ok())
     {

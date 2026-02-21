@@ -250,7 +250,7 @@ pub fn cmd_config(show: bool, reset: bool) -> Result<()> {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 fn sort_by_size(projects: &mut [ScannedProject]) {
-    projects.sort_by(|a, b| b.total_cleanable_bytes.cmp(&a.total_cleanable_bytes));
+    projects.sort_unstable_by_key(|p| std::cmp::Reverse(p.total_cleanable_bytes));
 }
 
 fn filter_by_age(projects: &mut Vec<ScannedProject>, older_than: Option<&str>) -> Result<()> {

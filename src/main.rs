@@ -6,7 +6,6 @@ use clap::Parser;
 
 use dev_sweep::cli::commands::{cmd_clean, cmd_config, cmd_scan, cmd_summary};
 use dev_sweep::cli::{Cli, Commands};
-use dev_sweep::config::DevSweepConfig;
 use dev_sweep::tui::colors::red_bold;
 
 fn main() {
@@ -18,7 +17,6 @@ fn main() {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
-    let _config = DevSweepConfig::load();
 
     let scan_path = cli
         .path
