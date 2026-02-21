@@ -2,8 +2,10 @@ use std::io::{self, Write};
 
 use crate::cleaner::CleanResult;
 use crate::scanner::ScannedProject;
+use crate::tui::colors::{
+    blue, bold, cyan, cyan_bold, dim, green, green_bold, red, yellow, yellow_bold,
+};
 use crate::util::{format_age, format_bytes, pad_left, pad_right, shorten_path, truncate};
-use crate::tui::colors::{bold, cyan, cyan_bold, dim, green, green_bold, yellow, yellow_bold};
 
 // ── Table rendering ─────────────────────────────────────────────────────────
 
@@ -68,7 +70,15 @@ pub fn print_results_table(projects: &[ScannedProject]) {
         .collect();
 
     // Calculate column widths
-    let headers = ["#", "Project", "Type", "Cleanable", "Targets", "Last Modified", "Path"];
+    let headers = [
+        "#",
+        "Project",
+        "Type",
+        "Cleanable",
+        "Targets",
+        "Last Modified",
+        "Path",
+    ];
     let mut widths: Vec<usize> = headers.iter().map(|h| h.len()).collect();
 
     for row in &rows {
@@ -181,11 +191,7 @@ pub fn print_clean_summary(results: &[CleanResult], dry_run: bool) {
         );
 
         if total_errors > 0 {
-            println!(
-                "  {} {} errors occurred:",
-                yellow("⚠"),
-                total_errors,
-            );
+            println!("  {} {} errors occurred:", yellow("⚠"), total_errors,);
             for result in results {
                 for error in &result.errors {
                     println!("    {} {}: {}", red("✗"), result.project_name, error);
@@ -201,7 +207,10 @@ pub fn print_clean_summary(results: &[CleanResult], dry_run: bool) {
 /// Display a multi-select prompt. Returns the indices selected.
 pub fn multi_select(prompt: &str, items: &[String]) -> anyhow::Result<Vec<usize>> {
     println!("\n  {}", bold(prompt));
-    println!("  {}\n", dim("Enter numbers separated by commas/spaces, ranges with dash (e.g. 1,3,5-8), or 'all'"));
+    println!(
+        "  {}\n",
+        dim("Enter numbers separated by commas/spaces, ranges with dash (e.g. 1,3,5-8), or 'all'")
+    );
 
     for (i, item) in items.iter().enumerate() {
         println!("    {}  {}", cyan_bold(&format!("{:>3}", i + 1)), item);

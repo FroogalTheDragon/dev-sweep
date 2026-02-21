@@ -1,6 +1,6 @@
 //! Tests for display utilities: byte formatting, ANSI handling, padding, age formatting, truncation.
 
-use dev_sweep::tui::display::{blue, bold, cyan, dim, green, green_bold, red, yellow};
+use dev_sweep::tui::colors::{blue, bold, cyan, dim, green, green_bold, red, yellow};
 use dev_sweep::util::{
     format_age, format_bytes, pad_left, pad_right, shorten_path, truncate, visible_len,
 };
