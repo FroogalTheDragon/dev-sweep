@@ -3,6 +3,7 @@
 use std::fs;
 use std::path::PathBuf;
 
+use dev_sweep::config::DevSweepConfig;
 use dev_sweep::scanner::ProjectKind;
 use dev_sweep::scanner::walk::{
     analyze_project, dir_size, find_pycache_recursive, scan_directory, should_visit,
@@ -260,7 +261,8 @@ fn scan_finds_multiple_project_types() {
     fs::create_dir_all(&random).unwrap();
     fs::write(random.join("notes.txt"), "notes").unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
 
     assert_eq!(projects.len(), 2);
     let kinds: Vec<ProjectKind> = projects.iter().map(|p| p.kind).collect();
@@ -288,7 +290,8 @@ fn scan_respects_max_depth() {
     fs::create_dir_all(deep.join("node_modules")).unwrap();
     fs::write(deep.join("node_modules/mod.js"), "code").unwrap();
 
-    let projects = scan_directory(&root, Some(2)).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, Some(2), &config).unwrap();
 
     assert_eq!(projects.len(), 1);
     assert_eq!(projects[0].kind, ProjectKind::Rust);
@@ -299,7 +302,8 @@ fn scan_respects_max_depth() {
 #[test]
 fn scan_empty_directory() {
     let root = test_dir("scan_empty");
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert!(projects.is_empty());
     fs::remove_dir_all(&root).unwrap();
 }
@@ -313,7 +317,128 @@ fn scan_excludes_projects_with_no_artifacts() {
     fs::write(proj.join("Cargo.toml"), "[package]").unwrap();
     // No target/ directory
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert!(projects.is_empty()); // 0 cleanable bytes → filtered out
+    fs::remove_dir_all(&root).unwrap();
+}
+
+// ── Config-aware scanning ──────────────────────────────────────────────────
+
+#[test]
+fn scan_respects_config_exclude_kinds() {
+    let root = test_dir("scan_cfg_exclude_kinds");
+
+    // Rust project with artifacts
+    let rust_proj = root.join("my_rust_app");
+    fs::create_dir_all(rust_proj.join("src")).unwrap();
+    fs::write(rust_proj.join("Cargo.toml"), "[package]").unwrap();
+    fs::create_dir_all(rust_proj.join("target/debug")).unwrap();
+    fs::write(rust_proj.join("target/debug/app"), "binary").unwrap();
+
+    // Node project with artifacts
+    let node_proj = root.join("my_node_app");
+    fs::create_dir_all(&node_proj).unwrap();
+    fs::write(node_proj.join("package.json"), "{}").unwrap();
+    fs::create_dir_all(node_proj.join("node_modules/express")).unwrap();
+    fs::write(node_proj.join("node_modules/express/index.js"), "code").unwrap();
+
+    // Exclude Rust via config
+    let config = DevSweepConfig {
+        exclude_kinds: vec![ProjectKind::Rust],
+        ..Default::default()
+    };
+    let projects = scan_directory(&root, None, &config).unwrap();
+
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].kind, ProjectKind::Node);
+
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn scan_respects_config_ignore_paths() {
+    let root = test_dir("scan_cfg_ignore_paths");
+
+    // Two Rust projects
+    let kept = root.join("keep_this");
+    fs::create_dir_all(kept.join("src")).unwrap();
+    fs::write(kept.join("Cargo.toml"), "[package]").unwrap();
+    fs::create_dir_all(kept.join("target")).unwrap();
+    fs::write(kept.join("target/bin"), "data").unwrap();
+
+    let ignored = root.join("skip_this");
+    fs::create_dir_all(ignored.join("src")).unwrap();
+    fs::write(ignored.join("Cargo.toml"), "[package]").unwrap();
+    fs::create_dir_all(ignored.join("target")).unwrap();
+    fs::write(ignored.join("target/bin"), "data").unwrap();
+
+    // Ignore the second project via config
+    let config = DevSweepConfig {
+        ignore_paths: vec![ignored.clone()],
+        ..Default::default()
+    };
+    let projects = scan_directory(&root, None, &config).unwrap();
+
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].name, "keep_this");
+
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn scan_config_exclude_multiple_kinds() {
+    let root = test_dir("scan_cfg_multi_exclude");
+
+    // Rust project
+    let rust_proj = root.join("rust_app");
+    fs::create_dir_all(&rust_proj).unwrap();
+    fs::write(rust_proj.join("Cargo.toml"), "[package]").unwrap();
+    fs::create_dir_all(rust_proj.join("target")).unwrap();
+    fs::write(rust_proj.join("target/bin"), "data").unwrap();
+
+    // Node project
+    let node_proj = root.join("node_app");
+    fs::create_dir_all(&node_proj).unwrap();
+    fs::write(node_proj.join("package.json"), "{}").unwrap();
+    fs::create_dir_all(node_proj.join("node_modules")).unwrap();
+    fs::write(node_proj.join("node_modules/m.js"), "x").unwrap();
+
+    // Java project
+    let java_proj = root.join("java_app");
+    fs::create_dir_all(&java_proj).unwrap();
+    fs::write(java_proj.join("pom.xml"), "<project>").unwrap();
+    fs::create_dir_all(java_proj.join("target")).unwrap();
+    fs::write(java_proj.join("target/app.jar"), "data").unwrap();
+
+    // Exclude Rust and Java
+    let config = DevSweepConfig {
+        exclude_kinds: vec![ProjectKind::Rust, ProjectKind::Java],
+        ..Default::default()
+    };
+    let projects = scan_directory(&root, None, &config).unwrap();
+
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].kind, ProjectKind::Node);
+
+    fs::remove_dir_all(&root).unwrap();
+}
+
+#[test]
+fn scan_config_empty_has_no_effect() {
+    let root = test_dir("scan_cfg_empty");
+
+    let proj = root.join("my_app");
+    fs::create_dir_all(&proj).unwrap();
+    fs::write(proj.join("Cargo.toml"), "[package]").unwrap();
+    fs::create_dir_all(proj.join("target")).unwrap();
+    fs::write(proj.join("target/bin"), "data").unwrap();
+
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
+
+    assert_eq!(projects.len(), 1);
+    assert_eq!(projects[0].kind, ProjectKind::Rust);
+
     fs::remove_dir_all(&root).unwrap();
 }

@@ -17,8 +17,9 @@ pub fn cmd_scan(
     max_depth: Option<usize>,
     older_than: Option<&str>,
     json: bool,
+    config: &DevSweepConfig,
 ) -> Result<()> {
-    let mut projects = scan_directory(path, max_depth)?;
+    let mut projects = scan_directory(path, max_depth, config)?;
     filter_by_age(&mut projects, older_than)?;
     sort_by_size(&mut projects);
 
@@ -38,8 +39,9 @@ pub fn cmd_clean(
     all: bool,
     dry_run: bool,
     json: bool,
+    config: &DevSweepConfig,
 ) -> Result<()> {
-    let mut projects = scan_directory(path, max_depth)?;
+    let mut projects = scan_directory(path, max_depth, config)?;
     filter_by_age(&mut projects, older_than)?;
     sort_by_size(&mut projects);
 
@@ -142,8 +144,9 @@ pub fn cmd_summary(
     max_depth: Option<usize>,
     older_than: Option<&str>,
     json: bool,
+    config: &DevSweepConfig,
 ) -> Result<()> {
-    let mut projects = scan_directory(path, max_depth)?;
+    let mut projects = scan_directory(path, max_depth, config)?;
     filter_by_age(&mut projects, older_than)?;
 
     let total_bytes: u64 = projects.iter().map(|p| p.total_cleanable_bytes).sum();

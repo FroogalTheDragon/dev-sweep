@@ -5,6 +5,7 @@ use std::fs;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
+use dev_sweep::config::DevSweepConfig;
 use dev_sweep::scanner::ProjectKind;
 use dev_sweep::scanner::walk::{
     analyze_project, detect_project_kind, dir_size, scan_directory,
@@ -91,7 +92,8 @@ fn scan_does_not_follow_symlinked_directories() {
     // Symlink to the same project under a different name
     symlink(&real_proj, root.join("linked_project")).unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     // Should only find 1 project (the real one), not 2
     assert_eq!(projects.len(), 1);
     assert!(projects[0].path.ends_with("real_project"));
@@ -217,7 +219,8 @@ fn nested_project_inside_another_project() {
     fs::create_dir_all(inner.join("node_modules/react")).unwrap();
     fs::write(inner.join("node_modules/react/index.js"), "code").unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert_eq!(projects.len(), 2);
 
     let kinds: Vec<ProjectKind> = projects.iter().map(|p| p.kind).collect();
@@ -248,7 +251,8 @@ fn project_with_multiple_marker_files_detected_once() {
     fs::create_dir_all(proj.join("target")).unwrap();
     fs::write(proj.join("target/app.jar"), "data").unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert_eq!(projects.len(), 1);
     assert_eq!(projects[0].kind, ProjectKind::Java);
 
@@ -269,7 +273,8 @@ fn deeply_nested_project_found() {
     fs::create_dir_all(deep.join("target")).unwrap();
     fs::write(deep.join("target/bin"), "data").unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert_eq!(projects.len(), 1);
     assert_eq!(projects[0].kind, ProjectKind::Rust);
     fs::remove_dir_all(&root).unwrap();
@@ -285,7 +290,8 @@ fn max_depth_zero_finds_nothing() {
 
     // depth 0 = only the root entry itself, no children
     // The root IS a project, so it should be found at depth 0
-    let projects = scan_directory(&root, Some(0)).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, Some(0), &config).unwrap();
     // WalkDir max_depth(0) yields only the root, so detect_project_kind
     // will check the root dir itself
     assert!(projects.len() <= 1);
@@ -310,7 +316,8 @@ fn max_depth_one_finds_only_immediate_children() {
     fs::create_dir_all(deep.join("node_modules")).unwrap();
     fs::write(deep.join("node_modules/m.js"), "x").unwrap();
 
-    let projects = scan_directory(&root, Some(1)).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, Some(1), &config).unwrap();
     assert_eq!(projects.len(), 1);
     assert_eq!(projects[0].kind, ProjectKind::Rust);
     fs::remove_dir_all(&root).unwrap();
@@ -455,7 +462,8 @@ fn scan_many_projects_at_once() {
         fs::write(proj.join("target/bin"), format!("binary_{i}")).unwrap();
     }
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert_eq!(projects.len(), 25);
     assert!(projects.iter().all(|p| p.kind == ProjectKind::Rust));
     assert!(projects.iter().all(|p| p.total_cleanable_bytes > 0));
@@ -664,7 +672,8 @@ fn project_inside_hidden_directory_skipped() {
     fs::create_dir_all(hidden.join("target")).unwrap();
     fs::write(hidden.join("target/bin"), "data").unwrap();
 
-    let projects = scan_directory(&root, None).unwrap();
+    let config = DevSweepConfig::default();
+    let projects = scan_directory(&root, None, &config).unwrap();
     assert!(projects.is_empty());
     fs::remove_dir_all(&root).unwrap();
 }
